@@ -237,7 +237,7 @@
 
     .details {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       margin-top: 12px;
     }
@@ -264,6 +264,18 @@
       font-weight: 950;
     }
 
+    .units-positive {
+      color: var(--green);
+    }
+
+    .units-negative {
+      color: var(--red);
+    }
+
+    .units-neutral {
+      color: var(--muted);
+    }
+    
     .play-yrfi {
       color: var(--green);
     }
@@ -424,6 +436,7 @@
       play: 16,      // Q
       odds: 17,      // R
       result: 20,    // U
+      units: 22,     // W
       gameTime: 23,  // X
       gameId: 24,    // Y
       playTo: 25     // Z
@@ -491,6 +504,22 @@
       return num > 0 ? `+${num}` : `${num}`;
     }
 
+    function formatUnits(value, status) {
+      if (status === "pending") return "—";
+
+      const raw = String(value || "").trim();
+
+      if (raw === "") return "—";
+
+      const num = Number(raw);
+
+      if (Number.isNaN(num)) return raw;
+
+      if (num > 0) return `+${num.toFixed(2)}u`;
+      if (num < 0) return `${num.toFixed(2)}u`;
+
+      return "0.00u";
+    }
     function parseCSV(text) {
       const rows = [];
       let row = [];
@@ -623,6 +652,7 @@
             play,
             odds: row[COL.odds],
             result: String(row[COL.result] || "").trim().toUpperCase(),
+            units: row[COL.units],
             gameTime: row[COL.gameTime],
             gameId: row[COL.gameId],
             playTo: row[COL.playTo]
@@ -764,23 +794,34 @@
                   <div class="detail-value">${escapeHtml(play.gameTime || "—")}</div>
                 </div>
 
-                <div class="detail">
-                  <div class="detail-label">Play</div>
-                  <div class="detail-value ${play.play === "YRFI" ? "play-yrfi" : "play-nrfi"}">
-                    ${escapeHtml(play.play)}
-                  </div>
+              <div class="detail">
+                <div class="detail-label">Play</div>
+                <div class="detail-value ${play.play === "YRFI" ? "play-yrfi" : "play-nrfi"}">
+                  ${escapeHtml(play.play)}
                 </div>
+            </div>
 
-                <div class="detail">
-                  <div class="detail-label">Odds</div>
-                  <div class="detail-value">${escapeHtml(formatOdds(play.odds) || "—")}</div>
-                </div>
+            <div class="detail">
+              <div class="detail-label">Odds</div>
+              <div class="detail-value">${escapeHtml(formatOdds(play.odds) || "—")}</div>
+            </div>
 
-                <div class="detail">
-                  <div class="detail-label">Play To</div>
-                  <div class="detail-value">${escapeHtml(formatOdds(play.playTo) || "—")}</div>
-                </div>
+            <div class="detail">
+              <div class="detail-label">Play To</div>
+              <div class="detail-value">${escapeHtml(formatOdds(play.playTo) || "—")}</div>
+            </div>
+
+            <div class="detail">
+              <div class="detail-label">Units</div>
+              <div class="detail-value ${
+                status === "win" ? "units-positive" :
+                status === "loss" ? "units-negative" :
+                "units-neutral"
+              }">
+                ${escapeHtml(formatUnits(play.units, status))}
               </div>
+            </div>
+          </div>
             </div>
           </article>
         `;
