@@ -65,7 +65,16 @@
       font-size: 14px;
     }
 
-    .status-pill {
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-pill,
+    .nav-pill {
       background: rgba(116, 195, 101, 0.13);
       border: 1px solid rgba(116, 195, 101, 0.45);
       color: var(--green);
@@ -74,11 +83,19 @@
       font-weight: 800;
       font-size: 13px;
       white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .nav-pill {
+      color: var(--text);
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.14);
     }
 
     .model-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 920px);
+      justify-content: center;
       gap: 18px;
     }
 
@@ -349,16 +366,14 @@
       text-align: center;
     }
 
-    @media (max-width: 1080px) {
-      .model-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
     @media (max-width: 720px) {
       .header {
         align-items: flex-start;
         flex-direction: column;
+      }
+
+      .header-actions {
+        justify-content: flex-start;
       }
 
       .quick-grid {
@@ -398,29 +413,27 @@
         <h1>YRFI / NRFI Model Summary</h1>
         <div class="subtitle" id="lastUpdated">Loading summary...</div>
       </div>
-      <div class="status-pill" id="todayLabel">Today</div>
+
+      <div class="header-actions">
+        <a class="nav-pill" href="https://coachmustache.github.io/rfi-plays/">Today’s Plays</a>
+        <div class="status-pill" id="todayLabel">Today</div>
+      </div>
     </header>
 
     <section class="model-grid" id="modelGrid">
-      <div class="empty">Loading model summaries...</div>
+      <div class="empty">Loading model summary...</div>
     </section>
 
     <div class="footer">
-      Pulls from the published Game_Backtest CSV summary area. Auto-refreshes every 60 seconds.
+      Pulls from the published V2 Game_Backtest CSV summary area. Auto-refreshes every 60 seconds.
     </div>
   </main>
 
   <script>
-    const SOURCES = [
-      {
-        name: "V1",
-        url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_1lOdsXHuX6EVik0beeAUXFck7o0pOuElAB3B6tWoAh2n_wq2iID5IhLfbJJ19ijlU6Qfj-0_tVhi/pub?gid=1064158788&single=true&output=csv"
-      },
-      {
-        name: "V2",
-        url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7XfJbgPEN8Mo_nf1evZ3Hb7ec5il5MlOFEgSaClIPuHdEAUq7XMpN5Bc4XOPBas4hQj0juKsMZJr2/pub?gid=1064158788&single=true&output=csv"
-      }
-    ];
+    const SOURCE = {
+      name: "V2",
+      url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7XfJbgPEN8Mo_nf1evZ3Hb7ec5il5MlOFEgSaClIPuHdEAUq7XMpN5Bc4XOPBas4hQj0juKsMZJr2/pub?gid=1064158788&single=true&output=csv"
+    };
 
     const AUTO_REFRESH_MS = 60000;
 
@@ -846,42 +859,30 @@
         .replaceAll("'", "&#039;");
     }
 
-    async function loadSource(source) {
-      if (!source.url || source.url.includes("PASTE_")) {
-        return null;
-      }
-
+    async function loadSource() {
       const cacheBust = `v=${Date.now()}`;
-      const separator = source.url.includes("?") ? "&" : "?";
-      const url = `${source.url}${separator}${cacheBust}`;
+      const separator = SOURCE.url.includes("?") ? "&" : "?";
+      const url = `${SOURCE.url}${separator}${cacheBust}`;
 
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error(`${source.name} failed to load: HTTP ${response.status}`);
+        throw new Error(`${SOURCE.name} failed to load: HTTP ${response.status}`);
       }
 
       const text = await response.text();
       const rows = parseCSV(text);
 
-      return extractSummary(rows, source.name);
+      return extractSummary(rows, SOURCE.name);
     }
 
     async function loadDashboard() {
       const grid = document.getElementById("modelGrid");
 
       try {
-        const summaries = [];
+        const summary = await loadSource();
 
-        for (const source of SOURCES) {
-          const summary = await loadSource(source);
-
-          if (summary) {
-            summaries.push(summary);
-          }
-        }
-
-        renderSummaries(summaries);
+        renderSummary(summary);
 
         const now = new Date();
 
@@ -896,7 +897,7 @@
 
         grid.innerHTML = `
           <div class="empty">
-            Could not load model summaries.<br />
+            Could not load model summary.<br />
             ${escapeHtml(error.message)}
           </div>
         `;
@@ -905,66 +906,64 @@
       }
     }
 
-    function renderSummaries(summaries) {
+    function renderSummary(summary) {
       const grid = document.getElementById("modelGrid");
 
-      if (summaries.length === 0) {
+      if (!summary) {
         grid.innerHTML = `
           <div class="empty">
-            No summary data loaded. Add your published CSV URLs in the SOURCES config.
+            No summary data loaded.
           </div>
         `;
         return;
       }
 
-      grid.innerHTML = summaries.map(summary => {
-        return `
-          <article class="model-card">
-            <div class="model-header">
-              <div>
-                <div class="model-title">${escapeHtml(summary.name)}</div>
-                <div class="model-tag">Backtest Summary</div>
-              </div>
-              <div class="status-pill">${escapeHtml(summary.left["Official Plays"] || "0")} Plays</div>
+      grid.innerHTML = `
+        <article class="model-card">
+          <div class="model-header">
+            <div>
+              <div class="model-title">${escapeHtml(summary.name)}</div>
+              <div class="model-tag">Backtest Summary</div>
+            </div>
+            <div class="status-pill">${escapeHtml(summary.left["Official Plays"] || "0")} Plays</div>
+          </div>
+
+          <div class="content">
+            <div class="quick-grid">
+              ${miniCard("Record", `${summary.left["Wins"] || "0"}-${summary.left["Losses"] || "0"}`)}
+              ${miniCard("Units Profit", summary.left["Units Profit"], valueClass(summary.left["Units Profit"]))}
+              ${miniCard("ROI", summary.left["ROI"], valueClass(summary.left["ROI"]))}
+              ${miniCard("Avg CLV", summary.left["Avg CLV"], valueClass(summary.left["Avg CLV"]))}
             </div>
 
-            <div class="content">
-              <div class="quick-grid">
-                ${miniCard("Record", `${summary.left["Wins"] || "0"}-${summary.left["Losses"] || "0"}`)}
-                ${miniCard("Units Profit", summary.left["Units Profit"], valueClass(summary.left["Units Profit"]))}
-                ${miniCard("ROI", summary.left["ROI"], valueClass(summary.left["ROI"]))}
-                ${miniCard("Avg CLV", summary.left["Avg CLV"], valueClass(summary.left["Avg CLV"]))}
-              </div>
+            ${renderProfitChart(summary.profitSeries)}
 
-              ${renderProfitChart(summary.profitSeries)}
-
-              <div class="section">
-                <div class="section-title">Model Accuracy</div>
-                <div class="stat-list">
-                  ${statRow("Games Graded", summary.accuracy["Games Graded"])}
-                  ${statRow("Avg Model YRFI", summary.accuracy["Avg Model YRFI"])}
-                  ${statRow("Actual YRFI Rate", summary.accuracy["Actual YRFI Rate"])}
-                  ${statRow("Avg Model NRFI", summary.accuracy["Avg Model NRFI"])}
-                  ${statRow("Actual NRFI Rate", summary.accuracy["Actual NRFI Rate"])}
-                  ${statRow("Direction Accuracy", summary.accuracy["Model Direction Accuracy"])}
-                  ${statRow("Avg Best Edge", summary.accuracy["Avg Best Edge"])}
-                  ${statRow("Avg Confidence", summary.accuracy["Avg Model Confidence"])}
-                </div>
-              </div>
-
-              <div class="section">
-                <div class="section-title">Play Type</div>
-                ${renderPlayTable(summary.plays)}
-              </div>
-
-              <div class="section">
-                <div class="section-title">YRFI Buckets</div>
-                ${renderBucketTable(summary.buckets)}
+            <div class="section">
+              <div class="section-title">Model Accuracy</div>
+              <div class="stat-list">
+                ${statRow("Games Graded", summary.accuracy["Games Graded"])}
+                ${statRow("Avg Model YRFI", summary.accuracy["Avg Model YRFI"])}
+                ${statRow("Actual YRFI Rate", summary.accuracy["Actual YRFI Rate"])}
+                ${statRow("Avg Model NRFI", summary.accuracy["Avg Model NRFI"])}
+                ${statRow("Actual NRFI Rate", summary.accuracy["Actual NRFI Rate"])}
+                ${statRow("Direction Accuracy", summary.accuracy["Model Direction Accuracy"])}
+                ${statRow("Avg Best Edge", summary.accuracy["Avg Best Edge"])}
+                ${statRow("Avg Confidence", summary.accuracy["Avg Model Confidence"])}
               </div>
             </div>
-          </article>
-        `;
-      }).join("");
+
+            <div class="section">
+              <div class="section-title">Play Type</div>
+              ${renderPlayTable(summary.plays)}
+            </div>
+
+            <div class="section">
+              <div class="section-title">YRFI Buckets</div>
+              ${renderBucketTable(summary.buckets)}
+            </div>
+          </div>
+        </article>
+      `;
     }
 
     function miniCard(label, value, className = "") {
