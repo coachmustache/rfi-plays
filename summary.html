@@ -212,7 +212,7 @@
 
     .chart-wrap {
       width: 100%;
-      height: 180px;
+      height: 230px;
     }
 
     .profit-chart {
@@ -241,7 +241,7 @@
     }
 
     .chart-area {
-      fill: rgba(116, 195, 101, 0.10);
+      fill: url(#profitFill);
     }
 
     .chart-dot {
@@ -401,6 +401,10 @@
 
       .content {
         padding: 14px;
+      }
+
+      .chart-wrap {
+        height: 210px;
       }
     }
   </style>
@@ -755,6 +759,27 @@
       return "0.00u";
     }
 
+    function smoothPath(points) {
+      if (!points || points.length === 0) return "";
+
+      if (points.length === 1) {
+        return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+      }
+
+      let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+
+      for (let i = 0; i < points.length - 1; i++) {
+        const current = points[i];
+        const next = points[i + 1];
+
+        const midX = (current.x + next.x) / 2;
+
+        d += ` C ${midX.toFixed(2)} ${current.y.toFixed(2)}, ${midX.toFixed(2)} ${next.y.toFixed(2)}, ${next.x.toFixed(2)} ${next.y.toFixed(2)}`;
+      }
+
+      return d;
+    }
+
     function renderProfitChart(series) {
       if (!series || series.length < 2) {
         return `
@@ -768,11 +793,11 @@
         `;
       }
 
-      const width = 640;
-      const height = 180;
-      const padX = 34;
-      const padTop = 18;
-      const padBottom = 28;
+      const width = 760;
+      const height = 230;
+      const padX = 48;
+      const padTop = 26;
+      const padBottom = 38;
       const chartW = width - padX * 2;
       const chartH = height - padTop - padBottom;
 
@@ -780,12 +805,11 @@
       let min = Math.min(...values, 0);
       let max = Math.max(...values, 0);
 
-      if (min === max) {
-        min -= 1;
-        max += 1;
-      }
+      const padding = Math.max((max - min) * 0.12, 1);
+      min -= padding;
+      max += padding;
 
-      const range = max - min;
+      const range = max - min || 1;
 
       const xFor = index => {
         if (series.length === 1) return padX;
@@ -804,19 +828,25 @@
         };
       });
 
-      const linePath = points
-        .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-        .join(" ");
-
-      const areaPath =
-        `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${yFor(0).toFixed(2)} ` +
-        `L ${points[0].x.toFixed(2)} ${yFor(0).toFixed(2)} Z`;
+      const linePath = smoothPath(points);
 
       const zeroY = yFor(0);
       const last = series[series.length - 1];
 
+      const areaPath =
+        `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${zeroY.toFixed(2)} ` +
+        `L ${points[0].x.toFixed(2)} ${zeroY.toFixed(2)} Z`;
+
       const firstDate = points[1]?.label || "";
       const lastDate = points[points.length - 1]?.label || "";
+
+      const yTicks = [
+        max,
+        max - range * 0.25,
+        max - range * 0.50,
+        max - range * 0.75,
+        min
+      ];
 
       return `
         <div class="profit-chart-card">
@@ -826,24 +856,30 @@
           </div>
 
           <div class="chart-wrap">
-            <svg class="profit-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
-              <line class="chart-grid-line" x1="${padX}" y1="${padTop}" x2="${width - padX}" y2="${padTop}" />
-              <line class="chart-grid-line" x1="${padX}" y1="${padTop + chartH / 2}" x2="${width - padX}" y2="${padTop + chartH / 2}" />
-              <line class="chart-grid-line" x1="${padX}" y1="${padTop + chartH}" x2="${width - padX}" y2="${padTop + chartH}" />
+            <svg class="profit-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(116, 195, 101, 0.32)" />
+                  <stop offset="100%" stop-color="rgba(116, 195, 101, 0.04)" />
+                </linearGradient>
+              </defs>
 
-              <line class="chart-axis" x1="${padX}" y1="${zeroY}" x2="${width - padX}" y2="${zeroY}" />
+              ${yTicks.map(tick => `
+                <line class="chart-grid-line" x1="${padX}" y1="${yFor(tick).toFixed(2)}" x2="${width - padX}" y2="${yFor(tick).toFixed(2)}" />
+                <text class="chart-label" x="${padX - 8}" y="${(yFor(tick) + 4).toFixed(2)}" text-anchor="end">${escapeHtml(formatUnitsValue(tick))}</text>
+              `).join("")}
+
+              <line class="chart-axis" x1="${padX}" y1="${zeroY.toFixed(2)}" x2="${width - padX}" y2="${zeroY.toFixed(2)}" />
 
               <path class="chart-area" d="${areaPath}" />
               <path class="chart-line" d="${linePath}" />
 
               ${points.map(point => `
-                <circle class="chart-dot" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="3.5" />
+                <circle class="chart-dot" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="3.2" />
               `).join("")}
 
-              <text class="chart-label" x="${padX}" y="${height - 8}" text-anchor="start">${escapeHtml(firstDate)}</text>
-              <text class="chart-label" x="${width - padX}" y="${height - 8}" text-anchor="end">${escapeHtml(lastDate)}</text>
-              <text class="chart-label" x="${padX}" y="${padTop + 10}" text-anchor="start">${escapeHtml(formatUnitsValue(max))}</text>
-              <text class="chart-label" x="${padX}" y="${padTop + chartH - 4}" text-anchor="start">${escapeHtml(formatUnitsValue(min))}</text>
+              <text class="chart-label" x="${padX}" y="${height - 10}" text-anchor="start">${escapeHtml(firstDate)}</text>
+              <text class="chart-label" x="${width - padX}" y="${height - 10}" text-anchor="end">${escapeHtml(lastDate)}</text>
             </svg>
           </div>
         </div>
