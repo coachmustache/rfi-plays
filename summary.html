@@ -320,7 +320,7 @@
   <script>
     /************************************************************
      * CONFIG
-     * Use the published CSV links for each Game_Backtest sheet.
+     * These must be published CSV links, not pubhtml links.
      ************************************************************/
 
     const SOURCES = [
@@ -408,107 +408,28 @@
         .replace(/\s+/g, " ");
     }
 
-    function findCell(rows, label) {
-      const target = normalizeLabel(label);
-
-      for (let r = 0; r < rows.length; r++) {
-        for (let c = 0; c < rows[r].length; c++) {
-          if (normalizeLabel(rows[r][c]) === target) {
-            return { r, c };
-          }
-        }
-      }
-
-      return null;
+    function getCellRC(rows, r, c) {
+      return clean(rows?.[r - 1]?.[c - 1] || "");
     }
 
-    function findValueRight(rows, label) {
-      const cell = findCell(rows, label);
+    function findValueInRegion(rows, label, r1, c1, r2, c2) {
+      const target = normalizeLabel(label);
 
-      if (!cell) return "";
-
-      const row = rows[cell.r] || [];
-
-      for (let c = cell.c + 1; c < row.length; c++) {
-        const value = clean(row[c]);
-
-        if (value !== "") {
-          return value;
+      for (let r = r1; r <= r2; r++) {
+        for (let c = c1; c <= c2; c++) {
+          if (normalizeLabel(getCellRC(rows, r, c)) === target) {
+            for (let nextC = c + 1; nextC <= c2 + 3; nextC++) {
+              const value = getCellRC(rows, r, nextC);
+              if (value !== "") return value;
+            }
+          }
         }
       }
 
       return "";
     }
 
-    function findTable(rows, firstHeader, headersWanted, maxRows = 8) {
-      const start = findCell(rows, firstHeader);
-
-      if (!start) return [];
-
-      const headerRow = rows[start.r] || [];
-      const headerIndexes = headersWanted.map(header => {
-        const normalized = normalizeLabel(header);
-
-        for (let c = start.c; c < headerRow.length; c++) {
-          if (normalizeLabel(headerRow[c]) === normalized) {
-            return c;
-          }
-        }
-
-        return -1;
-      });
-
-      const output = [];
-
-      for (let r = start.r + 1; r < Math.min(rows.length, start.r + 1 + maxRows); r++) {
-        const row = rows[r] || [];
-        const firstValue = clean(row[start.c]);
-
-        if (!firstValue) continue;
-
-        const item = {};
-
-        headersWanted.forEach((header, i) => {
-          const index = headerIndexes[i];
-          item[header] = index >= 0 ? clean(row[index]) : "";
-        });
-
-        output.push(item);
-      }
-
-      return output;
-    }
-
     function extractSummary(rows, sourceName) {
-      const leftStats = [
-        "Total Tracked Games",
-        "Official Plays",
-        "Wins",
-        "Losses",
-        "Pending Plays",
-        "Win Rate",
-        "Units Profit",
-        "ROI",
-        "Avg Edge",
-        "Avg CLV",
-        "YRFI Plays",
-        "NRFI Plays",
-        "No Plays"
-      ];
-
-      const accuracyStats = [
-        "Games Graded",
-        "Avg Model YRFI",
-        "Actual YRFI Rate",
-        "Avg Model NRFI",
-        "Actual NRFI Rate",
-        "Model Direction Accuracy",
-        "Avg Best Edge",
-        "Avg Model Confidence",
-        "YRFI Picks Accuracy",
-        "NRFI Picks Accuracy"
-      ];
-
       const summary = {
         name: sourceName,
         left: {},
@@ -517,29 +438,100 @@
         buckets: []
       };
 
-      leftStats.forEach(label => {
-        summary.left[label] = findValueRight(rows, label);
-      });
+      // Left summary block: roughly columns A:B, rows 3:15
+      summary.left = {
+        "Total Tracked Games": findValueInRegion(rows, "Total Tracked Games", 3, 1, 15, 2),
+        "Official Plays": findValueInRegion(rows, "Official Plays", 3, 1, 15, 2),
+        "Wins": findValueInRegion(rows, "Wins", 3, 1, 15, 2),
+        "Losses": findValueInRegion(rows, "Losses", 3, 1, 15, 2),
+        "Pending Plays": findValueInRegion(rows, "Pending Plays", 3, 1, 15, 2),
+        "Win Rate": findValueInRegion(rows, "Win Rate", 3, 1, 15, 2),
+        "Units Profit": findValueInRegion(rows, "Units Profit", 3, 1, 15, 2),
+        "ROI": findValueInRegion(rows, "ROI", 3, 1, 15, 2),
+        "Avg Edge": findValueInRegion(rows, "Avg Edge", 3, 1, 15, 2),
+        "Avg CLV": findValueInRegion(rows, "Avg CLV", 3, 1, 15, 2),
+        "YRFI Plays": findValueInRegion(rows, "YRFI Plays", 3, 1, 15, 2),
+        "NRFI Plays": findValueInRegion(rows, "NRFI Plays", 3, 1, 15, 2),
+        "No Plays": findValueInRegion(rows, "No Plays", 3, 1, 15, 2)
+      };
 
-      accuracyStats.forEach(label => {
-        summary.accuracy[label] = findValueRight(rows, label);
-      });
+      // Model accuracy block: roughly columns D:G, rows 3:12
+      summary.accuracy = {
+        "Games Graded": findValueInRegion(rows, "Games Graded", 3, 4, 12, 7),
+        "Avg Model YRFI": findValueInRegion(rows, "Avg Model YRFI", 3, 4, 12, 7),
+        "Actual YRFI Rate": findValueInRegion(rows, "Actual YRFI Rate", 3, 4, 12, 7),
+        "Avg Model NRFI": findValueInRegion(rows, "Avg Model NRFI", 3, 4, 12, 7),
+        "Actual NRFI Rate": findValueInRegion(rows, "Actual NRFI Rate", 3, 4, 12, 7),
+        "Model Direction Accuracy": findValueInRegion(rows, "Model Direction Accuracy", 3, 4, 12, 7),
+        "Avg Best Edge": findValueInRegion(rows, "Avg Best Edge", 3, 4, 12, 7),
+        "Avg Model Confidence": findValueInRegion(rows, "Avg Model Confidence", 3, 4, 12, 7),
+        "YRFI Picks Accuracy": findValueInRegion(rows, "YRFI Picks Accuracy", 3, 4, 12, 7),
+        "NRFI Picks Accuracy": findValueInRegion(rows, "NRFI Picks Accuracy", 3, 4, 12, 7)
+      };
 
-      summary.plays = findTable(rows, "Play Type", [
-        "Play Type",
-        "Plays",
-        "Wins",
-        "Units",
-        "ROI"
-      ], 4);
+      // Play type table: H:L, rows 3:5
+      summary.plays = [
+        {
+          "Play Type": getCellRC(rows, 3, 8),
+          "Plays": getCellRC(rows, 3, 9),
+          "Wins": getCellRC(rows, 3, 10),
+          "Units": getCellRC(rows, 3, 11),
+          "ROI": getCellRC(rows, 3, 12)
+        },
+        {
+          "Play Type": getCellRC(rows, 4, 8),
+          "Plays": getCellRC(rows, 4, 9),
+          "Wins": getCellRC(rows, 4, 10),
+          "Units": getCellRC(rows, 4, 11),
+          "ROI": getCellRC(rows, 4, 12)
+        },
+        {
+          "Play Type": getCellRC(rows, 5, 8),
+          "Plays": getCellRC(rows, 5, 9),
+          "Wins": getCellRC(rows, 5, 10),
+          "Units": getCellRC(rows, 5, 11),
+          "ROI": getCellRC(rows, 5, 12)
+        }
+      ].filter(row => row["Play Type"] && row["Play Type"] !== "Play Type");
 
-      summary.buckets = findTable(rows, "Model YRFI Bucket", [
-        "Model YRFI Bucket",
-        "Games",
-        "Avg Model YRFI",
-        "Actual YRFI Rate",
-        "Difference"
-      ], 6);
+      // Bucket table: M:Q, rows 3:7
+      summary.buckets = [
+        {
+          "Model YRFI Bucket": getCellRC(rows, 3, 13),
+          "Games": getCellRC(rows, 3, 14),
+          "Avg Model YRFI": getCellRC(rows, 3, 15),
+          "Actual YRFI Rate": getCellRC(rows, 3, 16),
+          "Difference": getCellRC(rows, 3, 17)
+        },
+        {
+          "Model YRFI Bucket": getCellRC(rows, 4, 13),
+          "Games": getCellRC(rows, 4, 14),
+          "Avg Model YRFI": getCellRC(rows, 4, 15),
+          "Actual YRFI Rate": getCellRC(rows, 4, 16),
+          "Difference": getCellRC(rows, 4, 17)
+        },
+        {
+          "Model YRFI Bucket": getCellRC(rows, 5, 13),
+          "Games": getCellRC(rows, 5, 14),
+          "Avg Model YRFI": getCellRC(rows, 5, 15),
+          "Actual YRFI Rate": getCellRC(rows, 5, 16),
+          "Difference": getCellRC(rows, 5, 17)
+        },
+        {
+          "Model YRFI Bucket": getCellRC(rows, 6, 13),
+          "Games": getCellRC(rows, 6, 14),
+          "Avg Model YRFI": getCellRC(rows, 6, 15),
+          "Actual YRFI Rate": getCellRC(rows, 6, 16),
+          "Difference": getCellRC(rows, 6, 17)
+        },
+        {
+          "Model YRFI Bucket": getCellRC(rows, 7, 13),
+          "Games": getCellRC(rows, 7, 14),
+          "Avg Model YRFI": getCellRC(rows, 7, 15),
+          "Actual YRFI Rate": getCellRC(rows, 7, 16),
+          "Difference": getCellRC(rows, 7, 17)
+        }
+      ].filter(row => row["Model YRFI Bucket"] && row["Model YRFI Bucket"] !== "Model YRFI Bucket");
 
       return summary;
     }
