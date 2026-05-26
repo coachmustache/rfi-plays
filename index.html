@@ -94,11 +94,14 @@
 
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       margin-bottom: 18px;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
     }
-
+    
     .summary-card {
       background: rgba(17, 26, 43, 0.82);
       border: 1px solid var(--line);
@@ -421,11 +424,6 @@
       <div class="summary-card">
         <div class="summary-label">Total Plays</div>
         <div class="summary-value" id="totalPlays">0</div>
-      </div>
-
-      <div class="summary-card">
-        <div class="summary-label">Pending</div>
-        <div class="summary-value" id="pendingPlays">0</div>
       </div>
 
       <div class="summary-card">
@@ -862,7 +860,6 @@
       const yesterday = calculateDaySummary(yesterdaysPlays);
 
       document.getElementById("totalPlays").textContent = today.total;
-      document.getElementById("pendingPlays").textContent = today.pending;
       document.getElementById("wins").textContent = today.wins;
       document.getElementById("losses").textContent = today.losses;
 
