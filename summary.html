@@ -411,11 +411,6 @@
   </main>
 
   <script>
-    /************************************************************
-     * CONFIG
-     * These must be published CSV links, not pubhtml links.
-     ************************************************************/
-
     const SOURCES = [
       {
         name: "V1",
@@ -428,10 +423,6 @@
     ];
 
     const AUTO_REFRESH_MS = 60000;
-
-    /************************************************************
-     * CSV PARSER
-     ************************************************************/
 
     function parseCSV(text) {
       const rows = [];
@@ -486,10 +477,6 @@
       return rows;
     }
 
-    /************************************************************
-     * SUMMARY EXTRACTION
-     ************************************************************/
-
     function clean(value) {
       return String(value ?? "").trim();
     }
@@ -532,7 +519,6 @@
         profitSeries: buildProfitSeries(rows)
       };
 
-      // Left summary block: roughly columns A:B, rows 3:15
       summary.left = {
         "Total Tracked Games": findValueInRegion(rows, "Total Tracked Games", 3, 1, 15, 2),
         "Official Plays": findValueInRegion(rows, "Official Plays", 3, 1, 15, 2),
@@ -549,7 +535,6 @@
         "No Plays": findValueInRegion(rows, "No Plays", 3, 1, 15, 2)
       };
 
-      // Model accuracy block: roughly columns D:G, rows 3:12
       summary.accuracy = {
         "Games Graded": findValueInRegion(rows, "Games Graded", 3, 4, 12, 7),
         "Avg Model YRFI": findValueInRegion(rows, "Avg Model YRFI", 3, 4, 12, 7),
@@ -563,7 +548,6 @@
         "NRFI Picks Accuracy": findValueInRegion(rows, "NRFI Picks Accuracy", 3, 4, 12, 7)
       };
 
-      // Play type table: H:L, rows 3:5
       summary.plays = [
         {
           "Play Type": getCellRC(rows, 3, 8),
@@ -588,7 +572,6 @@
         }
       ].filter(row => row["Play Type"] && row["Play Type"] !== "Play Type");
 
-      // Bucket table: M:Q, rows 3:7
       summary.buckets = [
         {
           "Model YRFI Bucket": getCellRC(rows, 3, 13),
@@ -630,16 +613,11 @@
       return summary;
     }
 
-    /************************************************************
-     * FORMATTING + CHART HELPERS
-     ************************************************************/
-
     function valueClass(value) {
       const raw = clean(value).replace("%", "");
       const num = Number(raw);
 
       if (Number.isNaN(num)) return "";
-
       if (num > 0) return "positive";
       if (num < 0) return "negative";
       return "";
@@ -653,13 +631,11 @@
         .replace(",", "");
 
       const num = Number(raw);
-
       return Number.isNaN(num) ? null : num;
     }
 
     function normalizeDateForChart(value) {
       const text = clean(value);
-
       if (!text) return "";
 
       const parsed = new Date(text);
@@ -689,11 +665,6 @@
     }
 
     function buildProfitSeries(rows) {
-      /*
-        Game_Backtest columns:
-        A = Date
-        W = Units Won/Lost
-      */
       const DATE_COL = 0;
       const UNITS_COL = 22;
 
@@ -714,7 +685,7 @@
 
       let cumulative = 0;
 
-      const series = sortedDates.map(date => {
+      let series = sortedDates.map(date => {
         cumulative += groupedByDate.get(date);
 
         return {
@@ -724,12 +695,39 @@
         };
       });
 
-      if (series.length > 0) {
-        series.unshift({
-          date: "Start",
-          label: "Start",
-          value: 0
-        });
+      if (series.length === 0) return [];
+
+      const firstMovementIndex = series.findIndex(point => Math.abs(point.value) > 0.0001);
+
+      if (firstMovementIndex > 0) {
+        const previousPoint = series[firstMovementIndex - 1];
+
+        series = [
+          {
+            date: previousPoint.date,
+            label: previousPoint.label,
+            value: 0
+          },
+          ...series.slice(firstMovementIndex)
+        ];
+      } else if (firstMovementIndex === 0) {
+        series = [
+          {
+            date: "Start",
+            label: "Start",
+            value: 0
+          },
+          ...series
+        ];
+      } else {
+        series = [
+          {
+            date: "Start",
+            label: "Start",
+            value: 0
+          },
+          ...series
+        ];
       }
 
       return series;
@@ -815,7 +813,7 @@
           </div>
 
           <div class="chart-wrap">
-            <svg class="profit-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+            <svg class="profit-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
               <line class="chart-grid-line" x1="${padX}" y1="${padTop}" x2="${width - padX}" y2="${padTop}" />
               <line class="chart-grid-line" x1="${padX}" y1="${padTop + chartH / 2}" x2="${width - padX}" y2="${padTop + chartH / 2}" />
               <line class="chart-grid-line" x1="${padX}" y1="${padTop + chartH}" x2="${width - padX}" y2="${padTop + chartH}" />
@@ -847,10 +845,6 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
-
-    /************************************************************
-     * LOAD + RENDER
-     ************************************************************/
 
     async function loadSource(source) {
       if (!source.url || source.url.includes("PASTE_")) {
