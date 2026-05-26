@@ -257,12 +257,23 @@
       text-align: right;
     }
 
-    .team-logo {
-      width: 42px;
-      height: 42px;
-      object-fit: contain;
+    .team-logo-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle, rgba(255,255,255,0.92), rgba(255,255,255,0.68));
+      border: 1px solid rgba(255,255,255,0.32);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
       flex: 0 0 auto;
-      filter: drop-shadow(0 5px 10px rgba(0,0,0,0.35));
+    }
+
+    .team-logo {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      filter: none;
     }
 
     .team-code {
@@ -345,7 +356,7 @@
 
     @media (max-width: 1100px) {
       .summary-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
       }
     }
 
@@ -382,9 +393,15 @@
         grid-template-columns: 1fr;
       }
 
+      .team-logo-wrap {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+      }
+
       .team-logo {
-        width: 34px;
-        height: 34px;
+        width: 31px;
+        height: 31px;
       }
 
       .team-code {
@@ -465,11 +482,6 @@
   </main>
 
   <script>
-    /************************************************************
-     * CONFIG
-     * V2 only.
-     ************************************************************/
-
     const SOURCE = {
       name: "V2",
       url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7XfJbgPEN8Mo_nf1evZ3Hb7ec5il5MlOFEgSaClIPuHdEAUq7XMpN5Bc4XOPBas4hQj0juKsMZJr2/pub?gid=1064158788&single=true&output=csv"
@@ -477,36 +489,19 @@
 
     const AUTO_REFRESH_MS = 60000;
 
-    /************************************************************
-     * BACKTEST COLUMN MAP
-     *
-     * A Date
-     * B Game
-     * C Away
-     * D Home
-     * Q Recommended Play
-     * R Bet Odds
-     * U Actual Result
-     * V Units Risked
-     * W Units Won/Lost
-     * X Game Time
-     * Y Game ID
-     * Z Play To Odds
-     ************************************************************/
-
     const COL = {
-      date: 0,          // A
-      game: 1,          // B
-      away: 2,          // C
-      home: 3,          // D
-      play: 16,         // Q
-      odds: 17,         // R
-      result: 20,       // U
-      unitsRisked: 21,  // V
-      unitsWonLost: 22, // W
-      gameTime: 23,     // X
-      gameId: 24,       // Y
-      playTo: 25        // Z
+      date: 0,
+      game: 1,
+      away: 2,
+      home: 3,
+      play: 16,
+      odds: 17,
+      result: 20,
+      unitsRisked: 21,
+      unitsWonLost: 22,
+      gameTime: 23,
+      gameId: 24,
+      playTo: 25
     };
 
     const TEAM_IDS = {
@@ -916,7 +911,11 @@
             <div class="card-body">
               <div class="matchup">
                 <div class="team away">
-                  ${awayLogo ? `<img class="team-logo" src="${awayLogo}" alt="${escapeHtml(play.away)} logo" />` : ""}
+                  ${awayLogo ? `
+                    <div class="team-logo-wrap">
+                      <img class="team-logo" src="${awayLogo}" alt="${escapeHtml(play.away)} logo" />
+                    </div>
+                  ` : ""}
                   <div class="team-code">${escapeHtml(play.away)}</div>
                 </div>
 
@@ -924,7 +923,11 @@
 
                 <div class="team home">
                   <div class="team-code">${escapeHtml(play.home)}</div>
-                  ${homeLogo ? `<img class="team-logo" src="${homeLogo}" alt="${escapeHtml(play.home)} logo" />` : ""}
+                  ${homeLogo ? `
+                    <div class="team-logo-wrap">
+                      <img class="team-logo" src="${homeLogo}" alt="${escapeHtml(play.home)} logo" />
+                    </div>
+                  ` : ""}
                 </div>
               </div>
 
