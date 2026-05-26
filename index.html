@@ -65,7 +65,16 @@
       font-size: 14px;
     }
 
-    .status-pill {
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-pill,
+    .nav-pill {
       background: rgba(116, 195, 101, 0.13);
       border: 1px solid rgba(116, 195, 101, 0.45);
       color: var(--green);
@@ -74,11 +83,18 @@
       font-weight: 800;
       font-size: 13px;
       white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .nav-pill {
+      color: var(--text);
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.14);
     }
 
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(7, 1fr);
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -89,6 +105,7 @@
       border-radius: 16px;
       padding: 14px;
       box-shadow: var(--shadow);
+      min-height: 92px;
     }
 
     .summary-label {
@@ -97,12 +114,22 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      line-height: 1.25;
     }
 
     .summary-value {
       margin-top: 8px;
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .summary-subvalue {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.3;
     }
 
     .section-title {
@@ -163,12 +190,20 @@
       gap: 12px;
     }
 
-    .model-name {
+    .game-name {
       font-size: 13px;
       font-weight: 900;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       color: var(--muted);
+    }
+
+    .result-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .result-badge {
@@ -178,6 +213,11 @@
       border-radius: 999px;
       background: rgba(255,255,255,0.08);
       color: var(--muted);
+    }
+
+    .result-units {
+      font-size: 13px;
+      font-weight: 950;
     }
 
     .win .result-badge {
@@ -275,7 +315,7 @@
     .units-neutral {
       color: var(--muted);
     }
-    
+
     .play-yrfi {
       color: var(--green);
     }
@@ -300,10 +340,20 @@
       text-align: center;
     }
 
+    @media (max-width: 1100px) {
+      .summary-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
     @media (max-width: 900px) {
       .header {
         align-items: flex-start;
         flex-direction: column;
+      }
+
+      .header-actions {
+        justify-content: flex-start;
       }
 
       .summary-grid {
@@ -360,7 +410,11 @@
         <h1>Daily YRFI / NRFI Plays</h1>
         <div class="subtitle" id="lastUpdated">Loading plays...</div>
       </div>
-      <div class="status-pill" id="todayLabel">Today</div>
+
+      <div class="header-actions">
+        <a class="nav-pill" href="https://coachmustache.github.io/rfi-plays/summary.html">Model Summary</a>
+        <div class="status-pill" id="todayLabel">Today</div>
+      </div>
     </header>
 
     <section class="summary-grid">
@@ -368,17 +422,36 @@
         <div class="summary-label">Total Plays</div>
         <div class="summary-value" id="totalPlays">0</div>
       </div>
+
       <div class="summary-card">
         <div class="summary-label">Pending</div>
         <div class="summary-value" id="pendingPlays">0</div>
       </div>
+
       <div class="summary-card">
         <div class="summary-label">Wins</div>
         <div class="summary-value" id="wins">0</div>
       </div>
+
       <div class="summary-card">
         <div class="summary-label">Losses</div>
         <div class="summary-value" id="losses">0</div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-label">Today Profit</div>
+        <div class="summary-value" id="todayProfit">0.00u</div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-label">Today ROI</div>
+        <div class="summary-value" id="todayRoi">0.0%</div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-label">Yesterday</div>
+        <div class="summary-value" id="yesterdayRecord">0-0</div>
+        <div class="summary-subvalue" id="yesterdayDetails">0.00u · 0.0%</div>
       </div>
     </section>
 
@@ -396,21 +469,13 @@
   <script>
     /************************************************************
      * CONFIG
-     *
-     * Publish each Game_Backtest sheet to the web as CSV.
-     * Then paste the CSV URLs below.
+     * V2 only.
      ************************************************************/
 
-    const SOURCES = [
-      {
-        name: "V1",
-        url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_1lOdsXHuX6EVik0beeAUXFck7o0pOuElAB3B6tWoAh2n_wq2iID5IhLfbJJ19ijlU6Qfj-0_tVhi/pub?gid=1064158788&single=true&output=csv"
-      },
-      {
-        name: "V2",
-        url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7XfJbgPEN8Mo_nf1evZ3Hb7ec5il5MlOFEgSaClIPuHdEAUq7XMpN5Bc4XOPBas4hQj0juKsMZJr2/pub?gid=1064158788&single=true&output=csv"
-      }
-    ];
+    const SOURCE = {
+      name: "V2",
+      url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7XfJbgPEN8Mo_nf1evZ3Hb7ec5il5MlOFEgSaClIPuHdEAUq7XMpN5Bc4XOPBas4hQj0juKsMZJr2/pub?gid=1064158788&single=true&output=csv"
+    };
 
     const AUTO_REFRESH_MS = 60000;
 
@@ -418,28 +483,32 @@
      * BACKTEST COLUMN MAP
      *
      * A Date
+     * B Game
      * C Away
      * D Home
      * Q Recommended Play
      * R Bet Odds
      * U Actual Result
+     * V Units Risked
+     * W Units Won/Lost
      * X Game Time
      * Y Game ID
      * Z Play To Odds
      ************************************************************/
 
     const COL = {
-      date: 0,       // A
-      game: 1,       // B
-      away: 2,       // C
-      home: 3,       // D
-      play: 16,      // Q
-      odds: 17,      // R
-      result: 20,    // U
-      units: 22,     // W
-      gameTime: 23,  // X
-      gameId: 24,    // Y
-      playTo: 25     // Z
+      date: 0,          // A
+      game: 1,          // B
+      away: 2,          // C
+      home: 3,          // D
+      play: 16,         // Q
+      odds: 17,         // R
+      result: 20,       // U
+      unitsRisked: 21,  // V
+      unitsWonLost: 22, // W
+      gameTime: 23,     // X
+      gameId: 24,       // Y
+      playTo: 25        // Z
     };
 
     const TEAM_IDS = {
@@ -479,9 +548,7 @@
       const code = String(teamCode || "").trim().toUpperCase();
       const id = TEAM_IDS[code];
 
-      if (!id) {
-        return "";
-      }
+      if (!id) return "";
 
       return `https://www.mlbstatic.com/team-logos/${id}.svg`;
     }
@@ -504,22 +571,53 @@
       return num > 0 ? `+${num}` : `${num}`;
     }
 
-    function formatUnits(value, status) {
-      if (status === "pending") return "—";
-
-      const raw = String(value || "").trim();
-
-      if (raw === "") return "—";
+    function parseNumber(value) {
+      const raw = String(value || "")
+        .trim()
+        .replace("+", "")
+        .replace("%", "")
+        .replace("u", "")
+        .replace(",", "");
 
       const num = Number(raw);
 
-      if (Number.isNaN(num)) return raw;
+      return Number.isNaN(num) ? 0 : num;
+    }
+
+    function formatUnits(value) {
+      const num = parseNumber(value);
 
       if (num > 0) return `+${num.toFixed(2)}u`;
       if (num < 0) return `${num.toFixed(2)}u`;
 
       return "0.00u";
     }
+
+    function formatRisked(value) {
+      const num = parseNumber(value);
+
+      if (num === 0) return "—";
+
+      return `${num.toFixed(2)}u`;
+    }
+
+    function formatPercent(value) {
+      const num = Number(value);
+
+      if (Number.isNaN(num)) return "0.0%";
+
+      return `${(num * 100).toFixed(1)}%`;
+    }
+
+    function unitClass(value) {
+      const num = parseNumber(value);
+
+      if (num > 0) return "units-positive";
+      if (num < 0) return "units-negative";
+
+      return "units-neutral";
+    }
+
     function parseCSV(text) {
       const rows = [];
       let row = [];
@@ -573,24 +671,16 @@
       return rows;
     }
 
-    function todayKeys() {
-      const now = new Date();
+    function dateKeyForOffset(offsetDays) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() + offsetDays);
 
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const dd = String(now.getDate()).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
 
-      const m = now.getMonth() + 1;
-      const d = now.getDate();
-      const yy = String(now.getFullYear()).slice(-2);
-
-      return new Set([
-        `${yyyy}-${mm}-${dd}`,
-        `${m}/${d}/${yyyy}`,
-        `${m}/${d}/${yy}`,
-        `${mm}/${dd}/${yyyy}`,
-        `${mm}/${dd}/${yy}`
-      ]);
+      return `${yyyy}-${mm}-${dd}`;
     }
 
     function normalizeDateText(value) {
@@ -614,12 +704,16 @@
       return text;
     }
 
-    function isToday(value) {
-      const text = String(value || "").trim();
-      const normalized = normalizeDateText(text);
-      const keys = todayKeys();
+    function isDateOffset(value, offsetDays) {
+      return normalizeDateText(value) === dateKeyForOffset(offsetDays);
+    }
 
-      return keys.has(text) || keys.has(normalized);
+    function isToday(value) {
+      return isDateOffset(value, 0);
+    }
+
+    function isYesterday(value) {
+      return isDateOffset(value, -1);
     }
 
     function resultStatus(play, result) {
@@ -628,23 +722,24 @@
 
       if (!r) return "pending";
       if (p === r) return "win";
+
       return "loss";
     }
 
     function statusLabel(status, result) {
       if (status === "win") return `Won (${result})`;
       if (status === "loss") return `Lost (${result})`;
+
       return "Pending";
     }
 
-    function readBacktestRows(rows, sourceName) {
+    function readBacktestRows(rows) {
       return rows
         .slice(1)
         .map(row => {
           const play = String(row[COL.play] || "").trim().toUpperCase();
 
           return {
-            source: sourceName,
             date: row[COL.date],
             game: row[COL.game],
             away: normalizeTeam(row[COL.away]),
@@ -652,17 +747,15 @@
             play,
             odds: row[COL.odds],
             result: String(row[COL.result] || "").trim().toUpperCase(),
-            units: row[COL.units],
+            unitsRisked: row[COL.unitsRisked],
+            unitsWonLost: row[COL.unitsWonLost],
             gameTime: row[COL.gameTime],
             gameId: row[COL.gameId],
             playTo: row[COL.playTo]
           };
         })
         .filter(item => {
-          return (
-            isToday(item.date) &&
-            (item.play === "YRFI" || item.play === "NRFI")
-          );
+          return item.play === "YRFI" || item.play === "NRFI";
         });
     }
 
@@ -671,49 +764,45 @@
       const timeB = new Date(`1/1/2000 ${b.gameTime || "11:59 PM"}`).getTime();
 
       if (timeA !== timeB) return timeA - timeB;
-
       if (a.away !== b.away) return a.away.localeCompare(b.away);
       if (a.home !== b.home) return a.home.localeCompare(b.home);
 
-      return a.source.localeCompare(b.source);
+      return String(a.game || "").localeCompare(String(b.game || ""));
     }
 
-    async function loadSource(source) {
-      if (!source.url || source.url.includes("PASTE_")) {
-        return [];
-      }
-
+    async function loadSource() {
       const cacheBust = `v=${Date.now()}`;
-      const separator = source.url.includes("?") ? "&" : "?";
-      const url = `${source.url}${separator}${cacheBust}`;
+      const separator = SOURCE.url.includes("?") ? "&" : "?";
+      const url = `${SOURCE.url}${separator}${cacheBust}`;
 
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error(`${source.name} failed to load: HTTP ${response.status}`);
+        throw new Error(`V2 failed to load: HTTP ${response.status}`);
       }
 
       const text = await response.text();
       const rows = parseCSV(text);
 
-      return readBacktestRows(rows, source.name);
+      return readBacktestRows(rows);
     }
 
     async function loadDashboard() {
       const playsGrid = document.getElementById("playsGrid");
 
       try {
-        const all = [];
+        const allRows = await loadSource();
 
-        for (const source of SOURCES) {
-          const sourceRows = await loadSource(source);
-          all.push(...sourceRows);
-        }
+        const todaysPlays = allRows
+          .filter(play => isToday(play.date))
+          .sort(sortPlays);
 
-        all.sort(sortPlays);
+        const yesterdaysPlays = allRows
+          .filter(play => isYesterday(play.date))
+          .sort(sortPlays);
 
-        renderSummary(all);
-        renderPlays(all);
+        renderSummary(todaysPlays, yesterdaysPlays);
+        renderPlays(todaysPlays);
 
         const now = new Date();
 
@@ -729,24 +818,69 @@
         playsGrid.innerHTML = `
           <div class="empty">
             Could not load plays.<br />
-            ${error.message}
+            ${escapeHtml(error.message)}
           </div>
         `;
 
-        document.getElementById("lastUpdated").textContent =
-          "Data load error";
+        document.getElementById("lastUpdated").textContent = "Data load error";
       }
     }
 
-    function renderSummary(plays) {
-      const pending = plays.filter(p => resultStatus(p.play, p.result) === "pending").length;
-      const wins = plays.filter(p => resultStatus(p.play, p.result) === "win").length;
-      const losses = plays.filter(p => resultStatus(p.play, p.result) === "loss").length;
+    function calculateDaySummary(plays) {
+      const graded = plays.filter(play => {
+        const status = resultStatus(play.play, play.result);
+        return status === "win" || status === "loss";
+      });
 
-      document.getElementById("totalPlays").textContent = plays.length;
-      document.getElementById("pendingPlays").textContent = pending;
-      document.getElementById("wins").textContent = wins;
-      document.getElementById("losses").textContent = losses;
+      const wins = graded.filter(play => resultStatus(play.play, play.result) === "win").length;
+      const losses = graded.filter(play => resultStatus(play.play, play.result) === "loss").length;
+      const pending = plays.length - graded.length;
+
+      const profit = graded.reduce((sum, play) => {
+        return sum + parseNumber(play.unitsWonLost);
+      }, 0);
+
+      const risked = graded.reduce((sum, play) => {
+        return sum + parseNumber(play.unitsRisked);
+      }, 0);
+
+      const roi = risked > 0 ? profit / risked : 0;
+
+      return {
+        total: plays.length,
+        pending,
+        wins,
+        losses,
+        profit,
+        risked,
+        roi
+      };
+    }
+
+    function renderSummary(todaysPlays, yesterdaysPlays) {
+      const today = calculateDaySummary(todaysPlays);
+      const yesterday = calculateDaySummary(yesterdaysPlays);
+
+      document.getElementById("totalPlays").textContent = today.total;
+      document.getElementById("pendingPlays").textContent = today.pending;
+      document.getElementById("wins").textContent = today.wins;
+      document.getElementById("losses").textContent = today.losses;
+
+      const todayProfitEl = document.getElementById("todayProfit");
+      todayProfitEl.textContent = formatUnits(today.profit);
+      todayProfitEl.className = `summary-value ${unitClass(today.profit)}`;
+
+      const todayRoiEl = document.getElementById("todayRoi");
+      todayRoiEl.textContent = formatPercent(today.roi);
+      todayRoiEl.className = `summary-value ${unitClass(today.roi)}`;
+
+      document.getElementById("yesterdayRecord").textContent =
+        `${yesterday.wins}-${yesterday.losses}`;
+
+      const yDetails = document.getElementById("yesterdayDetails");
+      yDetails.textContent =
+        `${formatUnits(yesterday.profit)} · ${formatPercent(yesterday.roi)}`;
+      yDetails.className = `summary-subvalue ${unitClass(yesterday.profit)}`;
     }
 
     function renderPlays(plays) {
@@ -755,7 +889,7 @@
       if (plays.length === 0) {
         playsGrid.innerHTML = `
           <div class="empty">
-            No official plays copied to the backtest for today yet.
+            No official plays copied to the V2 backtest for today yet.
           </div>
         `;
         return;
@@ -765,12 +899,21 @@
         const status = resultStatus(play.play, play.result);
         const awayLogo = teamLogo(play.away);
         const homeLogo = teamLogo(play.home);
+        const gradedUnits = status === "pending" ? "" : formatUnits(play.unitsWonLost);
 
         return `
           <article class="play-card ${status}">
             <div class="model-strip">
-              <div class="model-name">${escapeHtml(play.source)} · ${escapeHtml(play.game || "")}</div>
-              <div class="result-badge">${escapeHtml(statusLabel(status, play.result))}</div>
+              <div class="game-name">${escapeHtml(play.game || "")}</div>
+
+              <div class="result-wrap">
+                <div class="result-badge">${escapeHtml(statusLabel(status, play.result))}</div>
+                ${
+                  gradedUnits
+                    ? `<div class="result-units ${unitClass(play.unitsWonLost)}">${escapeHtml(gradedUnits)}</div>`
+                    : ""
+                }
+              </div>
             </div>
 
             <div class="card-body">
@@ -794,34 +937,28 @@
                   <div class="detail-value">${escapeHtml(play.gameTime || "—")}</div>
                 </div>
 
-              <div class="detail">
-                <div class="detail-label">Play</div>
-                <div class="detail-value ${play.play === "YRFI" ? "play-yrfi" : "play-nrfi"}">
-                  ${escapeHtml(play.play)}
+                <div class="detail">
+                  <div class="detail-label">Play</div>
+                  <div class="detail-value ${play.play === "YRFI" ? "play-yrfi" : "play-nrfi"}">
+                    ${escapeHtml(play.play)}
+                  </div>
                 </div>
-            </div>
 
-            <div class="detail">
-              <div class="detail-label">Odds</div>
-              <div class="detail-value">${escapeHtml(formatOdds(play.odds) || "—")}</div>
-            </div>
+                <div class="detail">
+                  <div class="detail-label">Odds</div>
+                  <div class="detail-value">${escapeHtml(formatOdds(play.odds) || "—")}</div>
+                </div>
 
-            <div class="detail">
-              <div class="detail-label">Play To</div>
-              <div class="detail-value">${escapeHtml(formatOdds(play.playTo) || "—")}</div>
-            </div>
+                <div class="detail">
+                  <div class="detail-label">Play To</div>
+                  <div class="detail-value">${escapeHtml(formatOdds(play.playTo) || "—")}</div>
+                </div>
 
-            <div class="detail">
-              <div class="detail-label">Units</div>
-              <div class="detail-value ${
-                status === "win" ? "units-positive" :
-                status === "loss" ? "units-negative" :
-                "units-neutral"
-              }">
-                ${escapeHtml(formatUnits(play.units, status))}
+                <div class="detail">
+                  <div class="detail-label">Units Risked</div>
+                  <div class="detail-value">${escapeHtml(formatRisked(play.unitsRisked))}</div>
+                </div>
               </div>
-            </div>
-          </div>
             </div>
           </article>
         `;
